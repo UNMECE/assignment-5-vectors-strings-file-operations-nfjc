@@ -1,102 +1,97 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <sstream>
 #include <string>
 #include "pixel.h"
-
-void average_colors(std::vector<Pixel> &pixel_list){
-	float sum_red = 0, sum_green = 0, sum_blue = 0;
-	int count = pixel_list.size();
-	
-	for(const auto &pixel : pixel_list) {
-		sum_red += pixel.r;
-		sum_green += pixel.g;
-		sum_blue += pixel.b;
-	}
-	std::cout << "Average red value: " << sum_red;
-	std::cout << "Average green value: " << sum_green;
-	std::cout << "Average blue value: " << sum_blue;
-}
-void flip_vertically(std::vector<Pixel> &pixel_list){
-int height = 256; // Given y-length of the image
-    std::vector<Pixel> flipped_list(pixel_list.size());
-
-    for (const auto &pixel : pixel_list) {
-        Pixel flipped_pixel = pixel;
-        flipped_pixel.y = height - 1 - pixel.y; // Invert y-coordinate
-        flipped_list.push_back(flipped_pixel);
+//The function that averages colors.
+void average_colors(std::vector<Pixel> &pixels) {
+    float sum_r = 0, sum_g = 0, sum_b = 0;
+    int total_pixels = pixels.size();
+//Summing totals for each color.
+    for (const auto &pixel : pixels) {
+        sum_r += pixel.r;
+        sum_g += pixel.g;
+        sum_b += pixel.b;
     }
-
-    pixel_list = std::move(flipped_list);
-
-
-
-
-
-
+//Aevring RBG values and outputting them.
+    std::cout << "Average R: " << sum_r / total_pixels << "\n";
+    std::cout << "Average G: " << sum_g / total_pixels << "\n";
+    std::cout << "Average B: " << sum_b / total_pixels << "\n";
+}
+//The function to flip the pixel values and output them into flippeed.dat.
+void flip_vertically(std::vector<Pixel> &pixels) {
+    int max_y = 255; // Hardcoded height since input is fixed
+    for (auto &pixel : pixels) {
+        pixel.y = max_y - pixel.y; // Invert the y-coordinate
+    }
 }
 
-int main(int argc, char* argv[]){
-//Delcaring vectors, strings, and file input for my program.
-//This took SO long to figure out correctly. kept getting a million syntax errors.
-	std::vector<Pixel> pixel_list;
-	std::string pixels = argv[1];
-	std::ifstream inputFile(pixels);
-	std::string line;
-
-while (std::getline(inputFile, line)) {
-//The pixel values kept getting overridden so I make a separate pixel. every loop.
-    Pixel pixel;
-//Using int was giving me problems, size_t is better for indexing strings anyway.
-    size_t pos = 0;
-
-    //Exdracting x-coordinate
-    size_t nextPos = line.find(',', pos);
-    pixel.x = std::stoi(line.substr(pos, nextPos - pos));
-    pos = nextPos + 1;
-
-    //Extracting y-coordinate
-    nextPos = line.find(',', pos);
-    pixel.y = std::stoi(line.substr(pos, nextPos - pos));
-    pos = nextPos + 1;
-
-    //Extracting red
-    nextPos = line.find(',', pos);
-    pixel.r = std::stof(line.substr(pos, nextPos - pos));
-    pos = nextPos + 1;
-
-    //Extracting green
-    nextPos = line.find(',', pos);
-    pixel.g = std::stof(line.substr(pos, nextPos - pos));
-    pos = nextPos + 1;
-
-    //Extracting blue. This one doesnt have a comma so it's not included.
-    pixel.b = std::stof(line.substr(pos));
-
-    pixel_list.push_back(pixel);
-}
-
-inputFile.close();
-
-    //Function calls
-    average_colors(pixel_list);
-    flip_vertically(pixel_list);
-
-    //Savving the pixels to the outputted flipped.dat file.
-    std::ofstream outFile("flipped.dat");
-//Just in case the file isnt made or the program fails somehow.
-//Should be good now I just used for bug testing.
-    if (!outFile) {
-        std::cerr << "Error creating output file." << std::endl;
+int main(int argc, char *argv[]) {
+//Checking if the correct amount of arguments are given.
+    if (argc != 2) {
+        std::cerr << "Usage: " << argv[0] << " <input file>\n";
         return 1;
     }
-//Formatting the x,y,r,g,b values back into flipped.dat.
-    for (const auto& pixel : pixel_list) {
-        outFile << pixel.x << "," << pixel.y << ","
-                << pixel.r << "," << pixel.g << "," << pixel.b << "\n";
+
+    std::string input_filename = argv[1];
+    std::ifstream input_file(input_filename);
+//It kept being unable to get the input file so I added a check.
+    if (!input_file) {
+        std::cerr << "Error: Could not open file " << input_filename << "\n";
+        return 1;
     }
 
-    outFile.close();
+    std::vector<Pixel> pixels;
+    std::string line;
+//The while loop that gathers and parses through the file to get values for everything.
+    while (std::getline(input_file, line)) {
+        size_t pos = 0, next_pos;
+        Pixel pixel;
+
+        // Parse x
+        next_pos = line.find(',', pos);
+        pixel.x = std::stoi(line.substr(pos, next_pos - pos));
+        pos = next_pos + 1;
+
+        // Parse y
+        next_pos = line.find(',', pos);
+        pixel.y = std::stoi(line.substr(pos, next_pos - pos));
+        pos = next_pos + 1;
+
+        // Parse red
+        next_pos = line.find(',', pos);
+        pixel.r = std::stof(line.substr(pos, next_pos - pos));
+        pos = next_pos + 1;
+
+        // Parse green
+        next_pos = line.find(',', pos);
+        pixel.g = std::stof(line.substr(pos, next_pos - pos));
+        pos = next_pos + 1;
+
+        // Parse blue
+        pixel.b = std::stof(line.substr(pos));
+
+        pixels.push_back(pixel);
+    }
+
+    input_file.close();
+//Function calls!
+    average_colors(pixels);
+    flip_vertically(pixels);
+
+    std::ofstream output_file("flipped.dat");
+//Kept failing to make output file too so I added another check.
+    if (!output_file) {
+        std::cerr << "Error creating output file.\n";
+        return 1;
+    }
+//Formatting ther output with commas.
+    for (const auto &pixel : pixels) {
+        output_file << pixel.x << "," << pixel.y << ","
+                    << pixel.r << "," << pixel.g << "," << pixel.b << "\n";
+    }
+
+    output_file.close();
     return 0;
 }
+
